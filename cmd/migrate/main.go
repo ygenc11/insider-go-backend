@@ -8,6 +8,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	"github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
@@ -17,6 +18,7 @@ func main() {
 
 	direction := os.Args[1]
 
+	// ✅ backend ile aynı data.db dosyası kullanılacak
 	db, err := sql.Open("sqlite3", "./data.db")
 	if err != nil {
 		log.Fatal(err)
@@ -28,6 +30,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// migrations klasörünün yolu (senin dosya yapına göre kontrol et)
 	fSrc, err := (&file.File{}).Open("cmd/migrate/migrations")
 	if err != nil {
 		log.Fatal(err)
@@ -43,10 +46,12 @@ func main() {
 		if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 			log.Fatal(err)
 		}
+		log.Println("Migrations applied successfully (UP).")
 	case "down":
 		if err := m.Down(); err != nil && err != migrate.ErrNoChange {
 			log.Fatal(err)
 		}
+		log.Println("Migrations rolled back successfully (DOWN).")
 	default:
 		log.Fatal("Invalid direction. Use 'up' or 'down'.")
 	}
