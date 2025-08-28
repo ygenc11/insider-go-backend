@@ -15,8 +15,8 @@ func CreateTransaction(tx *models.Transaction) error {
 }
 
 // Kullanıcıya ait tüm transactionları getir
-func GetTransactionsByUser(userID int) ([]models.Transaction, error) {
-	var transactions []models.Transaction
+func GetTransactionsByUser(userID int) ([]*models.Transaction, error) {
+	var transactions []*models.Transaction
 	query := `SELECT * FROM transactions WHERE from_user_id = ? OR to_user_id = ?`
 	err := DB.Select(&transactions, query, userID, userID)
 	return transactions, err
