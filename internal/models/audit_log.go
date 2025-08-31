@@ -6,12 +6,12 @@ import (
 )
 
 type AuditLog struct {
-	ID        int       `db:"id" json:"id"`
-	Entity    string    `db:"entity_type" json:"entity_type"` // örn: "user", "transaction"
-	EntityID  int       `db:"entity_id" json:"entity_id"`
-	Action    string    `db:"action" json:"action"` // örn: "create", "update", "delete"
-	Details   string    `db:"details" json:"details"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	ID        int       `gorm:"column:id;primaryKey" db:"id" json:"id"`
+	Entity    string    `gorm:"column:entity_type" db:"entity_type" json:"entity_type"` // örn: "user", "transaction"
+	EntityID  int       `gorm:"column:entity_id" db:"entity_id" json:"entity_id"`
+	Action    string    `gorm:"column:action" db:"action" json:"action"` // örn: "create", "update", "delete"
+	Details   string    `gorm:"column:details" db:"details" json:"details"`
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime" db:"created_at" json:"created_at"`
 }
 
 // JSON helper’ları

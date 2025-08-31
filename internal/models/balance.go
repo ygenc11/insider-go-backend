@@ -6,9 +6,9 @@ import (
 )
 
 type Balance struct {
-	UserID      int       `db:"user_id" json:"user_id"`
-	Amount      float64   `db:"amount" json:"amount"`
-	LastUpdated time.Time `db:"last_updated_at" json:"last_updated_at"`
+	UserID      int       `gorm:"column:user_id;primaryKey" db:"user_id" json:"user_id"`
+	Amount      float64   `gorm:"column:amount" db:"amount" json:"amount"`
+	LastUpdated time.Time `gorm:"column:last_updated_at;autoUpdateTime" db:"last_updated_at" json:"last_updated_at"`
 }
 
 // JSON helper’ları

@@ -19,13 +19,13 @@ func Transfer(fromUserID, toUserID int, amount float64) error {
 		return errors.New("yetersiz bakiye")
 	}
 
-	// 2. Alıcı bakiyesi
+	// Alıcı bakiyesi
 	toBalance, err := database.GetBalanceByUserID(toUserID)
 	if err != nil {
 		return errors.New("alıcı bakiyesi bulunamadı")
 	}
 
-	// 3. Bakiyeleri güncelle
+	// Bakiyeleri güncelle
 	fromBalance.Amount -= amount
 	toBalance.Amount += amount
 
@@ -41,7 +41,7 @@ func Transfer(fromUserID, toUserID int, amount float64) error {
 		return err
 	}
 
-	// 4. Transaction kaydı
+	// Transaction kaydı
 	tx := &models.Transaction{
 		FromUser:  fromUserID,
 		ToUser:    toUserID,

@@ -4,13 +4,14 @@ import (
 	"net/http"
 	"strconv"
 
+	"insider-go-backend/internal/services"
+
 	"github.com/gin-gonic/gin"
-	"insider-go-backend/internal/database"
 )
 
 // Tüm kullanıcıları getir
 func GetUsersHandler(c *gin.Context) {
-	users, err := database.GetAllUsers()
+	users, err := services.ListUsers()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch users"})
 		return
@@ -27,7 +28,7 @@ func GetUserHandler(c *gin.Context) {
 		return
 	}
 
-	user, err := database.GetUserByID(id)
+	user, err := services.GetUser(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
@@ -55,7 +56,7 @@ func UpdateUserHandler(c *gin.Context) {
 		return
 	}
 
-	err = database.UpdateUser(id, req.Username, req.Email, req.Role)
+	err = services.UpdateUser(id, req.Username, req.Email, req.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user"})
 		return
@@ -73,7 +74,7 @@ func DeleteUserHandler(c *gin.Context) {
 		return
 	}
 
-	err = database.DeleteUser(id)
+	err = services.DeleteUser(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete user"})
 		return

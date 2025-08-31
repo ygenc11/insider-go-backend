@@ -4,19 +4,32 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3" // sqlite3 driver
+	"insider-go-backend/internal/models"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-var DB *sqlx.DB
+var DB *gorm.DB
 
-// ConnectDB: Veritabanı bağlantısını kurar ve DB değişkenini initialize eder
+// ConnectDB initializes the database connection using GORM
 func ConnectDB(dsn string) {
 	var err error
-	DB, err = sqlx.Connect("sqlite3", dsn)
+	DB, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("DB connection failed: %v", err)
 	}
 
-	fmt.Println("✅ Database connected")
+	fmt.Println("✅ Database connected (GORM)")
+
+	if err := DB.AutoMigrate(
+		&models.User{},
+		&models.Transaction{},
+		&models.Balance{},
+		&models.AuditLog{},
+	); err != nil {
+		log.Printf("AutoMigrate failed: %v", err)
+	} else {
+		log.Printf("AutoMigrate applied (DEV)")
+	}
 }

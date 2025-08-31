@@ -18,7 +18,6 @@ func main() {
 
 	direction := os.Args[1]
 
-	// ✅ backend ile aynı data.db dosyası kullanılacak
 	db, err := sql.Open("sqlite3", "./data.db")
 	if err != nil {
 		log.Fatal(err)
@@ -30,7 +29,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// migrations klasörünün yolu (senin dosya yapına göre kontrol et)
+	// migrations klasörünün yolu
 	fSrc, err := (&file.File{}).Open("cmd/migrate/migrations")
 	if err != nil {
 		log.Fatal(err)

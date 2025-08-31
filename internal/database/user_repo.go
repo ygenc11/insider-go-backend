@@ -2,15 +2,14 @@ package database
 
 import (
 	"insider-go-backend/internal/models"
-)
 
-// DB global değişkeni ConnectDB ile initialize edilmiş olmalı.
+	"gorm.io/gorm"
+)
 
 // Tüm kullanıcıları getir
 func GetAllUsers() ([]*models.User, error) {
 	var users []*models.User
-	err := DB.Select(&users, "SELECT * FROM users")
-	if err != nil {
+	if err := DB.Table("users").Find(&users).Error; err != nil {
 		return nil, err
 	}
 	return users, nil
@@ -19,8 +18,7 @@ func GetAllUsers() ([]*models.User, error) {
 // ID’ye göre kullanıcı getir
 func GetUserByID(id int) (*models.User, error) {
 	var user models.User
-	err := DB.Get(&user, "SELECT * FROM users WHERE id = ?", id)
-	if err != nil {
+	if err := DB.Table("users").First(&user, id).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -29,9 +27,16 @@ func GetUserByID(id int) (*models.User, error) {
 // Email’e göre kullanıcı bul
 func GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
-	query := `SELECT * FROM users WHERE email = ?`
-	err := DB.Get(&user, query, email)
-	if err != nil {
+	if err := DB.Table("users").Where("email = ?", email).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+// Username’a göre kullanıcı bul
+func GetUserByUsername(username string) (*models.User, error) {
+	var user models.User
+	if err := DB.Table("users").Where("username = ?", username).First(&user).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -39,22 +44,21 @@ func GetUserByEmail(email string) (*models.User, error) {
 
 // Yeni kullanıcı ekle
 func CreateUser(user *models.User) error {
-	query := `INSERT INTO users (username, email, password_hash, role, created_at, updated_at)
-              VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
-	_, err := DB.Exec(query, user.Username, user.Email, user.Password, user.Role)
-	return err
+	return DB.Table("users").Create(user).Error
 }
 
 // Kullanıcıyı güncelle
 func UpdateUser(id int, username, email, role string) error {
-	query := `UPDATE users SET username = ?, email = ?, role = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
-	_, err := DB.Exec(query, username, email, role, id)
-	return err
+	updates := map[string]interface{}{
+		"username":   username,
+		"email":      email,
+		"role":       role,
+		"updated_at": gorm.Expr("CURRENT_TIMESTAMP"),
+	}
+	return DB.Table("users").Where("id = ?", id).Updates(updates).Error
 }
 
 // Kullanıcıyı sil
 func DeleteUser(id int) error {
-	query := `DELETE FROM users WHERE id = ?`
-	_, err := DB.Exec(query, id)
-	return err
+	return DB.Table("users").Where("id = ?", id).Delete(&models.User{}).Error
 }

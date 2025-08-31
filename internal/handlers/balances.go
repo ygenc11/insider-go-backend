@@ -2,22 +2,17 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"insider-go-backend/internal/database"
 	"insider-go-backend/internal/models"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Kullanıcının mevcut bakiyesi
 func CurrentBalanceHandler(c *gin.Context) {
-	userIDParam := c.Query("user_id")
-	userID, err := strconv.Atoi(userIDParam)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
-		return
-	}
+	userID := c.GetInt("user_id")
 
 	balance, err := database.GetBalanceByUserID(userID)
 	if err != nil {
@@ -28,14 +23,9 @@ func CurrentBalanceHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, balance)
 }
 
-// Kullanıcının tarihsel bakiyeleri (tüm transactionlar üzerinden)
+// Tarihsel bakiye
 func HistoricalBalanceHandler(c *gin.Context) {
-	userIDParam := c.Query("user_id")
-	userID, err := strconv.Atoi(userIDParam)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
-		return
-	}
+	userID := c.GetInt("user_id")
 
 	transactions, err := database.GetTransactionsByUser(userID)
 	if err != nil {
@@ -59,16 +49,10 @@ func HistoricalBalanceHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, historical)
 }
 
-// Kullanıcının belirli bir zamanda bakiyesi
+// Belirli bir zamanda bakiye
 func BalanceAtTimeHandler(c *gin.Context) {
-	userIDParam := c.Query("user_id")
-	timeParam := c.Query("at_time") // ISO8601 format: 2025-08-26T17:00:00Z
-
-	userID, err := strconv.Atoi(userIDParam)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
-		return
-	}
+	userID := c.GetInt("user_id")
+	timeParam := c.Query("at_time")
 
 	atTime, err := time.Parse(time.RFC3339, timeParam)
 	if err != nil {
@@ -102,23 +86,23 @@ func BalanceAtTimeHandler(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{"user_id": userID, "balance_at_time": balance, "at_time": atTime})
+	c.JSON(http.StatusOK, gin.H{"balance_at_time": balance, "at_time": atTime})
 }
 
 // Yeni bakiye oluştur
 func CreateBalanceHandler(c *gin.Context) {
+	userID := c.GetInt("user_id")
+
 	var req struct {
-		UserID int     `json:"user_id"`
 		Amount float64 `json:"amount"`
 	}
-
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	balance := &models.Balance{
-		UserID: req.UserID,
+		UserID: userID,
 		Amount: req.Amount,
 	}
 

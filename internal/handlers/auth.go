@@ -20,11 +20,14 @@ func RegisterHandler(c *gin.Context) {
 		return
 	}
 
-	err := services.RegisterUser(req.Username, req.Email, req.Password, req.Role)
+	user, err := services.RegisterUser(req.Username, req.Email, req.Password, req.Role)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// create initial balance for the user
+	services.CreateBalanceForUser(user.ID, 0.0)
 
 	c.JSON(http.StatusOK, gin.H{"message": "user registered successfully"})
 }
@@ -40,13 +43,16 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
-	user, err := services.AuthenticateUser(req.Email, req.Password)
+	token, err := services.AuthenticateUser(req.Email, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "login successful", "user": user})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "login successful",
+		"token":   token,
+	})
 }
 
 func RefreshHandler(c *gin.Context) {
