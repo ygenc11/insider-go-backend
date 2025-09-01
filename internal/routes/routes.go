@@ -3,6 +3,7 @@ package routes
 import (
 	"insider-go-backend/internal/handlers"
 	"insider-go-backend/internal/middleware"
+	"insider-go-backend/internal/processor"
 
 	"github.com/gin-gonic/gin"
 )
@@ -46,6 +47,50 @@ func RegisterRoutes(r *gin.Engine) {
 			balances.GET("/current", handlers.CurrentBalanceHandler)
 			balances.GET("/historical", handlers.HistoricalBalanceHandler)
 			balances.GET("/at-time", handlers.BalanceAtTimeHandler)
+		}
+
+		// Ops: işlemci kuyruğu ve istatistik (admin rolü gerekli olabilir)
+		ops := api.Group("/ops")
+		ops.Use(middleware.AuthMiddleware())
+		{
+			ops.GET("/perf", func(c *gin.Context) {
+				stats := middleware.GetPerfStats()
+				c.JSON(200, stats)
+			})
+
+			ops.POST("/enqueue", func(c *gin.Context) {
+				var r struct {
+					Op       string  `json:"op"`
+					UserID   int     `json:"user_id"`
+					ToUserID int     `json:"to_user_id"`
+					Amount   float64 `json:"amount"`
+				}
+				if err := c.ShouldBindJSON(&r); err != nil {
+					c.JSON(400, gin.H{"error": err.Error()})
+					return
+				}
+				p := processor.GetDefault()
+				if p == nil {
+					c.JSON(503, gin.H{"error": "processor not running"})
+					return
+				}
+				job := processor.TxJob{Op: processor.TxOp(r.Op), UserID: r.UserID, ToUserID: r.ToUserID, Amount: r.Amount}
+				if ok := p.TryEnqueue(job); !ok {
+					c.JSON(429, gin.H{"error": "queue full"})
+					return
+				}
+				c.JSON(202, gin.H{"status": "enqueued"})
+			})
+
+			ops.GET("/stats", func(c *gin.Context) {
+				p := processor.GetDefault()
+				if p == nil {
+					c.JSON(503, gin.H{"error": "processor not running"})
+					return
+				}
+				enq, proc, ok, fail := p.Stats()
+				c.JSON(200, gin.H{"enqueued": enq, "processed": proc, "succeeded": ok, "failed": fail})
+			})
 		}
 	}
 }

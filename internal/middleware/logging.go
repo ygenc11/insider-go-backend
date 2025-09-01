@@ -14,6 +14,7 @@ func RequestLogger() gin.HandlerFunc {
 		path := c.Request.URL.Path
 		method := c.Request.Method
 		clientIP := c.ClientIP()
+		reqID := GetRequestID(c)
 
 		c.Next()
 
@@ -25,6 +26,7 @@ func RequestLogger() gin.HandlerFunc {
 			"status", status,
 			"latency_ms", latency.Milliseconds(),
 			"client_ip", clientIP,
+			"req_id", reqID,
 		)
 	}
 }

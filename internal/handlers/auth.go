@@ -43,19 +43,31 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
-	token, err := services.AuthenticateUser(req.Email, req.Password)
+	access, refresh, err := services.AuthenticateUser(req.Email, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "login successful",
-		"token":   token,
+		"message":       "login successful",
+		"token":         access,
+		"refresh_token": refresh,
 	})
 }
 
 func RefreshHandler(c *gin.Context) {
-	// Token yenileme işlemi
-	c.JSON(http.StatusOK, gin.H{"message": "token refreshed"})
+	var req struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.RefreshToken == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "refresh_token required"})
+		return
+	}
+	access, err := services.RefreshAccessToken(req.RefreshToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"token": access})
 }

@@ -6,15 +6,17 @@ import (
 )
 
 type jwtCfg struct {
-	Secret    string
-	AccessTTL time.Duration
+	Secret     string
+	AccessTTL  time.Duration
+	RefreshTTL time.Duration
 }
 
 // JWT konfigürasyonu
 func GetJWT() jwtCfg {
 	return jwtCfg{
-		Secret:    getenv("JWT_SECRET", "dev-secret-change-me"),
-		AccessTTL: mustParseDuration(getenv("JWT_ACCESS_TTL", "24h")),
+		Secret:     getenv("JWT_SECRET", "dev-secret-change-me"),
+		AccessTTL:  mustParseDuration(getenv("JWT_ACCESS_TTL", "24h")),
+		RefreshTTL: mustParseDuration(getenv("JWT_REFRESH_TTL", "168h")),
 	}
 }
 
