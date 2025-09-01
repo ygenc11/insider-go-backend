@@ -10,9 +10,12 @@ type jwtCfg struct {
 	AccessTTL time.Duration
 }
 
-var JWT = jwtCfg{
-	Secret:    getenv("JWT_SECRET", "dev-secret-change-me"),
-	AccessTTL: mustParseDuration(getenv("JWT_ACCESS_TTL", "15m")),
+// JWT konfigürasyonu
+func GetJWT() jwtCfg {
+	return jwtCfg{
+		Secret:    getenv("JWT_SECRET", "dev-secret-change-me"),
+		AccessTTL: mustParseDuration(getenv("JWT_ACCESS_TTL", "24h")),
+	}
 }
 
 func getenv(k, def string) string {
@@ -25,7 +28,7 @@ func getenv(k, def string) string {
 func mustParseDuration(s string) time.Duration {
 	d, err := time.ParseDuration(s)
 	if err != nil {
-		return 15 * time.Minute
+		return 24 * time.Hour
 	}
 	return d
 }

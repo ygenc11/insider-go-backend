@@ -4,8 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"insider-go-backend/internal/database"
-	"insider-go-backend/internal/models"
+	"insider-go-backend/internal/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,7 +13,7 @@ import (
 func CurrentBalanceHandler(c *gin.Context) {
 	userID := c.GetInt("user_id")
 
-	balance, err := database.GetBalanceByUserID(userID)
+	balance, err := services.GetBalance(userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "balance not found"})
 		return
@@ -27,7 +26,7 @@ func CurrentBalanceHandler(c *gin.Context) {
 func HistoricalBalanceHandler(c *gin.Context) {
 	userID := c.GetInt("user_id")
 
-	transactions, err := database.GetTransactionsByUser(userID)
+	transactions, err := services.GetTransactionsByUser(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch transactions"})
 		return
@@ -54,38 +53,23 @@ func BalanceAtTimeHandler(c *gin.Context) {
 	userID := c.GetInt("user_id")
 	timeParam := c.Query("at_time")
 
+	// Accept RFC3339 or date-only (YYYY-MM-DD). Date-only is treated as end of that day (UTC).
 	atTime, err := time.Parse(time.RFC3339, timeParam)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid time format"})
-		return
+		if d, derr := time.Parse("2006-01-02", timeParam); derr == nil {
+			// end of day UTC: 23:59:59
+			atTime = time.Date(d.Year(), d.Month(), d.Day(), 23, 59, 59, 0, time.UTC)
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid time format; use RFC3339 or YYYY-MM-DD"})
+			return
+		}
 	}
 
-	transactions, err := database.GetTransactionsByUser(userID)
+	balance, err := services.CalculateBalanceAt(userID, atTime)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch transactions"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to compute balance at time"})
 		return
 	}
-
-	balance := 0.0
-	for _, tx := range transactions {
-		if tx.CreatedAt.After(atTime) {
-			continue
-		}
-		switch tx.Type {
-		case "credit":
-			balance += tx.Amount
-		case "debit":
-			balance -= tx.Amount
-		case "transfer":
-			if tx.FromUser == userID {
-				balance -= tx.Amount
-			}
-			if tx.ToUser == userID {
-				balance += tx.Amount
-			}
-		}
-	}
-
 	c.JSON(http.StatusOK, gin.H{"balance_at_time": balance, "at_time": atTime})
 }
 
@@ -101,15 +85,10 @@ func CreateBalanceHandler(c *gin.Context) {
 		return
 	}
 
-	balance := &models.Balance{
-		UserID: userID,
-		Amount: req.Amount,
-	}
-
-	if err := database.CreateBalance(balance); err != nil {
+	updated, err := services.SetBalance(userID, req.Amount)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create balance"})
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "balance created", "balance": balance})
+	c.JSON(http.StatusOK, gin.H{"message": "balance created", "balance": updated})
 }

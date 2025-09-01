@@ -1,0 +1,6 @@
+{"time":"2025-09-01T15:45:20.686469+03:00","level":"INFO","msg":"service.user.register.start","username":"yusuf3","email":"me3@example.com","role":"admin"}
+{"time":"2025-09-01T15:45:20.686737+03:00","level":"WARN","msg":"service.user.register.email_exists","email":"me3@example.com"}
+{"time":"2025-09-01T15:45:20.686775+03:00","level":"INFO","msg":"http_request","method":"POST","path":"/api/v1/auth/register","status":400,"latency_ms":0,"client_ip":"::1"}
+{"time":"2025-09-01T15:46:04.147349+03:00","level":"INFO","msg":"service.user.login.start","email":"me3@example.com"}
+{"time":"2025-09-01T15:46:04.200407+03:00","level":"INFO","msg":"service.user.login.success","user_id":3}
+{"time":"2025-09-01T15:46:04.200434+03:00","level":"INFO","msg":"http_request","method":"POST","path":"/api/v1/auth/login","status":200,"latency_ms":53,"client_ip":"::1"}
