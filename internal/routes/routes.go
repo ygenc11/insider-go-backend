@@ -43,7 +43,6 @@ func RegisterRoutes(r *gin.Engine) {
 		balances := api.Group("/balances")
 		balances.Use(middleware.AuthMiddleware())
 		{
-			// user_id query param’ı yerine token’dan alınacak
 			balances.GET("/current", handlers.CurrentBalanceHandler)
 			balances.GET("/historical", handlers.HistoricalBalanceHandler)
 			balances.GET("/at-time", handlers.BalanceAtTimeHandler)

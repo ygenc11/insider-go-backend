@@ -7,9 +7,9 @@ import (
 
 type AuditLog struct {
 	ID        int       `gorm:"column:id;primaryKey" db:"id" json:"id"`
-	Entity    string    `gorm:"column:entity_type" db:"entity_type" json:"entity_type"` // örn: "user", "transaction"
+	Entity    string    `gorm:"column:entity_type" db:"entity_type" json:"entity_type"`
 	EntityID  int       `gorm:"column:entity_id" db:"entity_id" json:"entity_id"`
-	Action    string    `gorm:"column:action" db:"action" json:"action"` // örn: "create", "update", "delete"
+	Action    string    `gorm:"column:action" db:"action" json:"action"`
 	Details   string    `gorm:"column:details" db:"details" json:"details"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime" db:"created_at" json:"created_at"`
 }

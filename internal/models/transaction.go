@@ -10,8 +10,8 @@ type Transaction struct {
 	FromUser  int       `gorm:"column:from_user_id" db:"from_user_id" json:"from_user_id"`
 	ToUser    int       `gorm:"column:to_user_id" db:"to_user_id" json:"to_user_id"`
 	Amount    float64   `gorm:"column:amount" db:"amount" json:"amount"`
-	Type      string    `gorm:"column:type" db:"type" json:"type"`       // örn: "credit", "debit", "transfer"
-	Status    string    `gorm:"column:status" db:"status" json:"status"` // örn: "pending", "completed", "failed"
+	Type      string    `gorm:"column:type" db:"type" json:"type"`
+	Status    string    `gorm:"column:status" db:"status" json:"status"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime" db:"created_at" json:"created_at"`
 }
 

@@ -26,7 +26,7 @@ func RegisterHandler(c *gin.Context) {
 		return
 	}
 
-	// create initial balance for the user
+	// Yeni kullanıcı için başlangıç bakiyesi oluştur
 	services.CreateBalanceForUser(user.ID, 0.0)
 
 	c.JSON(http.StatusOK, gin.H{"message": "user registered successfully"})
@@ -56,6 +56,6 @@ func LoginHandler(c *gin.Context) {
 }
 
 func RefreshHandler(c *gin.Context) {
-	// Basit stub: token refresh
+	// Token yenileme işlemi
 	c.JSON(http.StatusOK, gin.H{"message": "token refreshed"})
 }

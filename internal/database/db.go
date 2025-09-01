@@ -12,7 +12,7 @@ import (
 
 var DB *gorm.DB
 
-// ConnectDB initializes the database connection using GORM
+// Veritabanına bağlan ve otomatik migrate işlemi yap
 func ConnectDB(dsn string) {
 	var err error
 	DB, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{})

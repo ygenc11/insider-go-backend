@@ -4,169 +4,82 @@ import (
 	"net/http"
 	"strconv"
 
-	"insider-go-backend/internal/database"
-	"insider-go-backend/internal/models"
+	"insider-go-backend/internal/services"
 
 	"github.com/gin-gonic/gin"
 )
 
-// Credit işlemi
+type TransactionRequest struct {
+	Amount float64 `json:"amount" binding:"required,gt=0"`
+	ToUser int     `json:"to_user_id"`
+}
+
+// POST /transactions/credit
 func CreditHandler(c *gin.Context) {
-	userID := c.GetInt("user_id")
-
-	var req struct {
-		Amount float64 `json:"amount"`
-	}
+	var req TransactionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	balance, err := database.GetBalanceByUserID(userID)
+	userID := c.GetInt("user_id")
+	newBal, err := services.Credit(userID, req.Amount)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "balance not found"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	balance.Amount += req.Amount
-	if err := database.UpdateBalance(userID, balance.Amount); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update balance"})
-		return
-	}
-
-	tx := &models.Transaction{
-		FromUser: userID,
-		ToUser:   userID,
-		Amount:   req.Amount,
-		Type:     "credit",
-		Status:   "completed",
-	}
-	if err := database.CreateTransaction(tx); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create transaction"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "credit successful", "balance": balance.Amount})
+	c.JSON(http.StatusOK, gin.H{"message": "credited", "new_balance": newBal})
 }
 
-// Debit işlemi
+// POST /transactions/debit
 func DebitHandler(c *gin.Context) {
+	var req TransactionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	userID := c.GetInt("user_id")
-
-	var req struct {
-		Amount float64 `json:"amount"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	newBal, err := services.Debit(userID, req.Amount)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	balance, err := database.GetBalanceByUserID(userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "balance not found"})
-		return
-	}
-
-	if balance.Amount < req.Amount {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "insufficient funds"})
-		return
-	}
-
-	balance.Amount -= req.Amount
-	if err := database.UpdateBalance(userID, balance.Amount); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update balance"})
-		return
-	}
-
-	tx := &models.Transaction{
-		FromUser: userID,
-		ToUser:   userID,
-		Amount:   req.Amount,
-		Type:     "debit",
-		Status:   "completed",
-	}
-	if err := database.CreateTransaction(tx); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create transaction"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "debit successful", "balance": balance.Amount})
+	c.JSON(http.StatusOK, gin.H{"message": "debited", "new_balance": newBal})
 }
 
-// Transfer işlemi
+// POST /transactions/transfer
 func TransferHandler(c *gin.Context) {
-	fromUser := c.GetInt("user_id")
-
-	var req struct {
-		ToUser int     `json:"to_user_id"`
-		Amount float64 `json:"amount"`
-	}
+	var req TransactionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	fromUserID := c.GetInt("user_id")
+	toUserID := req.ToUser
 
-	fromBalance, err := database.GetBalanceByUserID(fromUser)
+	if toUserID == 0 || toUserID == fromUserID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid recipient"})
+		return
+	}
+	fromNew, _, err := services.Transfer(fromUserID, toUserID, req.Amount)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "sender balance not found"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if fromBalance.Amount < req.Amount {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "insufficient funds"})
-		return
-	}
-
-	toBalance, err := database.GetBalanceByUserID(req.ToUser)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "receiver balance not found"})
-		return
-	}
-
-	fromBalance.Amount -= req.Amount
-	toBalance.Amount += req.Amount
-
-	if err := database.UpdateBalance(fromUser, fromBalance.Amount); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update sender balance"})
-		return
-	}
-	if err := database.UpdateBalance(req.ToUser, toBalance.Amount); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update receiver balance"})
-		return
-	}
-
-	tx := &models.Transaction{
-		FromUser: fromUser,
-		ToUser:   req.ToUser,
-		Amount:   req.Amount,
-		Type:     "transfer",
-		Status:   "completed",
-	}
-	if err := database.CreateTransaction(tx); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create transaction"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"message":      "transfer successful",
-		"from_balance": fromBalance.Amount,
-		"to_balance":   toBalance.Amount,
-	})
+	c.JSON(http.StatusOK, gin.H{"message": "transfer completed", "old_balance": fromNew + req.Amount, "new_balance": fromNew, "amount_transferred": req.Amount})
 }
 
-// Transaction geçmişi
+// GET /transactions/history
 func TransactionHistoryHandler(c *gin.Context) {
 	userID := c.GetInt("user_id")
-
-	transactions, err := database.GetTransactionsByUser(userID)
+	txs, err := services.GetTransactionsByUser(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch transactions"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	c.JSON(http.StatusOK, transactions)
+	c.JSON(http.StatusOK, gin.H{"transactions": txs})
 }
 
-// ID’ye göre transaction getir
+// GET /transactions/:id
 func GetTransactionHandler(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.Atoi(idParam)
@@ -174,8 +87,7 @@ func GetTransactionHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid transaction id"})
 		return
 	}
-
-	tx, err := database.GetTransactionByID(id)
+	tx, err := services.GetTransactionByID(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "transaction not found"})
 		return
