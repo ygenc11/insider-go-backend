@@ -10,7 +10,7 @@ import (
 // Credit: kullanıcı bakiyesine para ekler ve transaction kaydı oluşturur
 func Credit(userID int, amount float64) (float64, error) {
 	slog.Info("service.credit.start", "user_id", userID, "amount", amount)
-	newBal, tx, err := database.CreditAtomic(userID, amount)
+	newBal, tx, err := database.TransactionRepo().CreditAtomic(userID, amount)
 	if err != nil {
 		if err.Error() == "balance not found" {
 			slog.Error("service.credit.balance_not_found", "user_id", userID, "err", err)
@@ -28,7 +28,7 @@ func Credit(userID int, amount float64) (float64, error) {
 // Debit: kullanıcı bakiyesinden para düşer ve transaction kaydı oluşturur
 func Debit(userID int, amount float64) (float64, error) {
 	slog.Info("service.debit.start", "user_id", userID, "amount", amount)
-	newBal, tx, err := database.DebitAtomic(userID, amount)
+	newBal, tx, err := database.TransactionRepo().DebitAtomic(userID, amount)
 	if err != nil {
 		if err.Error() == "insufficient funds" {
 			slog.Warn("service.debit.insufficient_funds", "user_id", userID, "amount", amount)
@@ -47,7 +47,7 @@ func Debit(userID int, amount float64) (float64, error) {
 // Para transferi: iki bakiye arasında aktarım yapar, transaction kaydı oluşturur; yeni bakiyeleri döner
 func Transfer(fromUserID, toUserID int, amount float64) (fromNew float64, toNew float64, err error) {
 	slog.Info("service.transfer.start", "from_user_id", fromUserID, "to_user_id", toUserID, "amount", amount)
-	fromNew, toNew, tx, err := database.TransferAtomic(fromUserID, toUserID, amount)
+	fromNew, toNew, tx, err := database.TransactionRepo().TransferAtomic(fromUserID, toUserID, amount)
 	if err != nil {
 		switch err.Error() {
 		case "insufficient funds":
@@ -69,10 +69,10 @@ func Transfer(fromUserID, toUserID int, amount float64) (fromNew float64, toNew 
 // Sorgular
 func GetTransactionsByUser(userID int) ([]*models.Transaction, error) {
 	slog.Info("service.transactions.list_by_user", "user_id", userID)
-	return database.GetTransactionsByUser(userID)
+	return database.TransactionRepo().GetTransactionsByUser(userID)
 }
 
 func GetTransactionByID(id int) (*models.Transaction, error) {
 	slog.Info("service.transactions.get_by_id", "id", id)
-	return database.GetTransactionByID(id)
+	return database.TransactionRepo().GetTransactionByID(id)
 }

@@ -8,35 +8,36 @@ import (
 	"gorm.io/gorm"
 )
 
-// Yeni transaction ekle
-func CreateTransaction(tx *models.Transaction) error {
-	return DB.Table("transactions").Create(tx).Error
+type gormTransactionRepository struct{ db *gorm.DB }
+
+func NewGormTransactionRepository(db *gorm.DB) TransactionRepository {
+	return &gormTransactionRepository{db: db}
 }
 
-// Kullanıcıya ait tüm transactionları getir
-func GetTransactionsByUser(userID int) ([]*models.Transaction, error) {
+func (r *gormTransactionRepository) CreateTransaction(tx *models.Transaction) error {
+	return r.db.Table("transactions").Create(tx).Error
+}
+
+func (r *gormTransactionRepository) GetTransactionsByUser(userID int) ([]*models.Transaction, error) {
 	var transactions []*models.Transaction
-	err := DB.Table("transactions").
+	err := r.db.Table("transactions").
 		Where("from_user_id = ? OR to_user_id = ?", userID, userID).
 		Find(&transactions).Error
 	return transactions, err
 }
 
-// ID ile transaction getir
-func GetTransactionByID(id int) (*models.Transaction, error) {
+func (r *gormTransactionRepository) GetTransactionByID(id int) (*models.Transaction, error) {
 	var tx models.Transaction
-	if err := DB.Table("transactions").First(&tx, id).Error; err != nil {
+	if err := r.db.Table("transactions").First(&tx, id).Error; err != nil {
 		return nil, err
 	}
 	return &tx, nil
 }
 
-// CreditAtomic: belirli kullanıcının bakiyesini atomik olarak artırır ve aynı transaction içinde transaction kaydı oluşturur
-func CreditAtomic(userID int, amount float64) (float64, *models.Transaction, error) {
+func (r *gormTransactionRepository) CreditAtomic(userID int, amount float64) (float64, *models.Transaction, error) {
 	var newAmount float64
 	rec := &models.Transaction{}
-	err := DB.Transaction(func(tx *gorm.DB) error {
-		// bakiye var mı?
+	err := r.db.Transaction(func(tx *gorm.DB) error {
 		var b models.Balance
 		if err := tx.Table("balances").Where("user_id = ?", userID).First(&b).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -44,7 +45,6 @@ func CreditAtomic(userID int, amount float64) (float64, *models.Transaction, err
 			}
 			return err
 		}
-		// artır
 		if err := tx.Exec("UPDATE balances SET amount = amount + ?, last_updated_at = CURRENT_TIMESTAMP WHERE user_id = ?", amount, userID).Error; err != nil {
 			return err
 		}
@@ -63,12 +63,10 @@ func CreditAtomic(userID int, amount float64) (float64, *models.Transaction, err
 	return newAmount, rec, nil
 }
 
-// DebitAtomic: bakiyeden atomik olarak düşer (yeterli bakiye şartı) ve transaction kaydı oluşturur
-func DebitAtomic(userID int, amount float64) (float64, *models.Transaction, error) {
+func (r *gormTransactionRepository) DebitAtomic(userID int, amount float64) (float64, *models.Transaction, error) {
 	var newAmount float64
 	rec := &models.Transaction{}
-	err := DB.Transaction(func(tx *gorm.DB) error {
-		// bakiye var mı?
+	err := r.db.Transaction(func(tx *gorm.DB) error {
 		var b models.Balance
 		if err := tx.Table("balances").Where("user_id = ?", userID).First(&b).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -76,7 +74,6 @@ func DebitAtomic(userID int, amount float64) (float64, *models.Transaction, erro
 			}
 			return err
 		}
-		// yeterli bakiye ile azalt
 		res := tx.Exec("UPDATE balances SET amount = amount - ?, last_updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND amount >= ?", amount, userID, amount)
 		if res.Error != nil {
 			return res.Error
@@ -99,12 +96,10 @@ func DebitAtomic(userID int, amount float64) (float64, *models.Transaction, erro
 	return newAmount, rec, nil
 }
 
-// TransferAtomic: iki kullanıcı arasında atomik transfer yapar ve transaction kaydı oluşturur
-func TransferAtomic(fromUserID, toUserID int, amount float64) (float64, float64, *models.Transaction, error) {
+func (r *gormTransactionRepository) TransferAtomic(fromUserID, toUserID int, amount float64) (float64, float64, *models.Transaction, error) {
 	var fromAmt, toAmt float64
 	rec := &models.Transaction{}
-	err := DB.Transaction(func(tx *gorm.DB) error {
-		// bakiye var mı? (her iki taraf)
+	err := r.db.Transaction(func(tx *gorm.DB) error {
 		var fromB, toB models.Balance
 		if err := tx.Table("balances").Where("user_id = ?", fromUserID).First(&fromB).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -118,7 +113,6 @@ func TransferAtomic(fromUserID, toUserID int, amount float64) (float64, float64,
 			}
 			return err
 		}
-		// gönderenden düş (yeterli bakiye ile)
 		res := tx.Exec("UPDATE balances SET amount = amount - ?, last_updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND amount >= ?", amount, fromUserID, amount)
 		if res.Error != nil {
 			return res.Error
@@ -126,7 +120,6 @@ func TransferAtomic(fromUserID, toUserID int, amount float64) (float64, float64,
 		if res.RowsAffected == 0 {
 			return errors.New("insufficient funds")
 		}
-		// alıcıya ekle
 		if err := tx.Exec("UPDATE balances SET amount = amount + ?, last_updated_at = CURRENT_TIMESTAMP WHERE user_id = ?", amount, toUserID).Error; err != nil {
 			return err
 		}

@@ -16,10 +16,10 @@ func LogAction(entity string, entityID int, action, details string) error {
 		CreatedAt: time.Now(),
 	}
 
-	return database.InsertAuditLog(logEntry)
+	return database.AuditLogRepo().InsertAuditLog(logEntry)
 }
 
 // Logları getir
 func GetEntityLogs(entity string, entityID int) ([]models.AuditLog, error) {
-	return database.GetAuditLogsByEntity(entity, entityID)
+	return database.AuditLogRepo().GetAuditLogsByEntity(entity, entityID)
 }

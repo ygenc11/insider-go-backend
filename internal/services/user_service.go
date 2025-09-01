@@ -25,13 +25,13 @@ func RegisterUser(username, email, password, role string) (*models.User, error) 
 	if len(password) < 6 {
 		return nil, errors.New("password must be at least 6 characters")
 	}
-	existingUser, _ := database.GetUserByEmail(email)
+	existingUser, _ := database.UserRepo().GetUserByEmail(email)
 	if existingUser != nil {
 		slog.Warn("service.user.register.email_exists", "email", email)
 		return nil, errors.New("email already registered")
 	}
 
-	existingUser, _ = database.GetUserByUsername(username)
+	existingUser, _ = database.UserRepo().GetUserByUsername(username)
 	if existingUser != nil {
 		return nil, errors.New("username already taken")
 	}
@@ -52,7 +52,7 @@ func RegisterUser(username, email, password, role string) (*models.User, error) 
 		return nil, err
 	}
 
-	if err := database.CreateUser(user); err != nil {
+	if err := database.UserRepo().CreateUser(user); err != nil {
 		slog.Error("service.user.register.create_failed", "email", email, "err", err)
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func AuthenticateUser(email, password string) (string, string, error) {
 		return "", "", errors.New("invalid email format")
 	}
 
-	user, err := database.GetUserByEmail(email)
+	user, err := database.UserRepo().GetUserByEmail(email)
 	if err != nil || user == nil {
 		slog.Warn("service.user.login.user_not_found", "email", email)
 		return "", "", errors.New("user not found")
@@ -171,7 +171,7 @@ func RefreshAccessToken(refreshToken string) (string, error) {
 		return "", errors.New("invalid user_id")
 	}
 	uid := int(uidFloat)
-	user, err := database.GetUserByID(uid)
+	user, err := database.UserRepo().GetUserByID(uid)
 	if err != nil || user == nil {
 		return "", errors.New("user not found")
 	}
@@ -232,7 +232,7 @@ func CreateBalanceForUser(userID int, initialAmount float64) error {
 	// bakiye oluşturma için denetim (audit) kaydı
 	_ = LogAction("balance", userID, "create", "initial balance created for user")
 
-	if err := database.CreateBalance(balance); err != nil {
+	if err := database.BalanceRepo().CreateBalance(balance); err != nil {
 		slog.Error("service.user.create_balance_failed", "user_id", userID, "err", err)
 		return err
 	}
@@ -243,13 +243,13 @@ func CreateBalanceForUser(userID int, initialAmount float64) error {
 func ListUsers() ([]*models.User, error) {
 	slog.Info("service.user.list")
 	_ = LogAction("user", 0, "list", "list all users")
-	return database.GetAllUsers()
+	return database.UserRepo().GetAllUsers()
 }
 
 func GetUser(id int) (*models.User, error) {
 	slog.Info("service.user.get", "user_id", id)
 	_ = LogAction("user", id, "get", "get user details")
-	return database.GetUserByID(id)
+	return database.UserRepo().GetUserByID(id)
 }
 
 func UpdateUser(id int, username, email, role string) error {
@@ -260,11 +260,11 @@ func UpdateUser(id int, username, email, role string) error {
 	if err := tmp.Validate(); err != nil {
 		return err
 	}
-	return database.UpdateUser(id, username, email, role)
+	return database.UserRepo().UpdateUser(id, username, email, role)
 }
 
 func DeleteUser(id int) error {
 	slog.Info("service.user.delete", "user_id", id)
 	_ = LogAction("user", id, "delete", "delete user")
-	return database.DeleteUser(id)
+	return database.UserRepo().DeleteUser(id)
 }

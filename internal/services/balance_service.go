@@ -10,7 +10,7 @@ import (
 // Bakiye ekleme/güncelleme
 func AddOrUpdateBalance(userID int, amount float64) error {
 	slog.Info("service.balance.add_or_update.start", "user_id", userID, "delta", amount)
-	balance, err := database.GetBalanceByUserID(userID)
+	balance, err := database.BalanceRepo().GetBalanceByUserID(userID)
 	if err != nil || balance == nil {
 		// Bakiye yoksa oluştur
 		newBalance := &models.Balance{
@@ -18,7 +18,7 @@ func AddOrUpdateBalance(userID int, amount float64) error {
 			Amount:      amount,
 			LastUpdated: time.Now(),
 		}
-		if err := database.CreateBalance(newBalance); err != nil {
+		if err := database.BalanceRepo().CreateBalance(newBalance); err != nil {
 			slog.Error("service.balance.create_failed", "user_id", userID, "err", err)
 			return err
 		}
@@ -28,7 +28,7 @@ func AddOrUpdateBalance(userID int, amount float64) error {
 
 	// Var olan bakiyeyi güncelle
 	balance.Amount += amount
-	if err := database.UpdateBalance(userID, balance.Amount); err != nil {
+	if err := database.BalanceRepo().UpdateBalance(userID, balance.Amount); err != nil {
 		slog.Error("service.balance.update_failed", "user_id", userID, "err", err)
 		return err
 	}
@@ -39,7 +39,7 @@ func AddOrUpdateBalance(userID int, amount float64) error {
 // Kullanıcı bakiyesi çekme
 func GetUserBalance(userID int) (float64, error) {
 	slog.Debug("service.balance.get_user_balance", "user_id", userID)
-	balance, err := database.GetBalanceByUserID(userID)
+	balance, err := database.BalanceRepo().GetBalanceByUserID(userID)
 	if err != nil || balance == nil {
 		return 0, err
 	}
@@ -49,37 +49,37 @@ func GetUserBalance(userID int) (float64, error) {
 // GetBalance: kullanıcı bakiyesini getirir
 func GetBalance(userID int) (*models.Balance, error) {
 	slog.Debug("service.balance.get", "user_id", userID)
-	return database.GetBalanceByUserID(userID)
+	return database.BalanceRepo().GetBalanceByUserID(userID)
 }
 
 // SetBalance: kullanıcı bakiyesini belirli bir değere ayarlar (varsa günceller, yoksa oluşturur)
 func SetBalance(userID int, amount float64) (*models.Balance, error) {
 	slog.Info("service.balance.set", "user_id", userID, "amount", amount)
-	b, err := database.GetBalanceByUserID(userID)
+	b, err := database.BalanceRepo().GetBalanceByUserID(userID)
 	if err != nil || b == nil {
 		newBalance := &models.Balance{
 			UserID:      userID,
 			Amount:      amount,
 			LastUpdated: time.Now(),
 		}
-		if err := database.CreateBalance(newBalance); err != nil {
+		if err := database.BalanceRepo().CreateBalance(newBalance); err != nil {
 			slog.Error("service.balance.create_failed", "user_id", userID, "err", err)
 			return nil, err
 		}
 		return newBalance, nil
 	}
-	if err := database.UpdateBalance(userID, amount); err != nil {
+	if err := database.BalanceRepo().UpdateBalance(userID, amount); err != nil {
 		slog.Error("service.balance.update_failed", "user_id", userID, "err", err)
 		return nil, err
 	}
 	// Güncellenmiş bakiyeyi tekrar çek
-	return database.GetBalanceByUserID(userID)
+	return database.BalanceRepo().GetBalanceByUserID(userID)
 }
 
 // CalculateBalanceAt: belirli bir zamandaki bakiyeyi hesaplar
 func CalculateBalanceAt(userID int, at time.Time) (float64, error) {
 	slog.Info("service.balance.calculate_at.start", "user_id", userID, "at", at)
-	txs, err := database.GetTransactionsByUser(userID)
+	txs, err := database.TransactionRepo().GetTransactionsByUser(userID)
 	if err != nil {
 		slog.Error("service.balance.calculate_at.fetch_failed", "user_id", userID, "err", err)
 		return 0, err

@@ -24,6 +24,9 @@ func ConnectDB(dsn string) {
 
 	fmt.Println("✅ Database connected (GORM)")
 
+	// Varsayılan repository implementasyonlarını başlat
+	InitDefaultRepos(DB)
+
 	if shouldAutoMigrate() {
 		if err := DB.AutoMigrate(
 			&models.User{},
