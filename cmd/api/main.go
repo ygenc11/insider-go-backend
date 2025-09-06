@@ -27,9 +27,8 @@ func main() {
 	// Load .env if present
 	_ = godotenv.Load()
 
-	// DB connection
-	dsn := getenv("DB_DSN", "./data.db")
-	database.ConnectDB(dsn)
+	// DB connection: if DB_DSN empty, code will build from piecewise vars (DB_HOST, DB_PORT, ...)
+	database.ConnectDB(os.Getenv("DB_DSN"))
 
 	// Gin router (manual middlewares: no default Recovery/Logger; we use our own)
 	r := gin.New()

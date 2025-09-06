@@ -1,0 +1,22 @@
+# Binaries
+/tmp
+/ops
+/logs
+*.log
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Local DB or data
+/data.db
+
+# Node / front-end leftovers
+node_modules
+
+# Misc
+.DS_Store

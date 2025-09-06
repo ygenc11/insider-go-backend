@@ -2,13 +2,15 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/sqlite3"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/file"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -18,13 +20,17 @@ func main() {
 
 	direction := os.Args[1]
 
-	db, err := sql.Open("sqlite3", "./data.db")
+	dsn := os.Getenv("DB_DSN")
+	if dsn == "" {
+		dsn = buildDSN()
+	}
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	instance, err := sqlite3.WithInstance(db, &sqlite3.Config{})
+	instance, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,7 +41,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	m, err := migrate.NewWithInstance("file", fSrc, "sqlite3", instance)
+	m, err := migrate.NewWithInstance("file", fSrc, "postgres", instance)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,4 +60,25 @@ func main() {
 	default:
 		log.Fatal("Invalid direction. Use 'up' or 'down'.")
 	}
+}
+
+func buildDSN() string {
+	host := env("DB_HOST", "postgres")
+	port := env("DB_PORT", "5432")
+	user := env("DB_USER", "app")
+	pass := env("DB_PASSWORD", "app")
+	name := env("DB_NAME", "appdb")
+	ssl := env("DB_SSLMODE", "disable")
+	base := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", host, port, user, pass, name, ssl)
+	if extra := os.Getenv("DB_EXTRA"); extra != "" {
+		base = base + " " + strings.TrimSpace(extra)
+	}
+	return base
+}
+
+func env(k, def string) string {
+	if v := os.Getenv(k); v != "" {
+		return v
+	}
+	return def
 }

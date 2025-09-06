@@ -11,10 +11,10 @@ import (
 
 type User struct {
 	ID        int       `gorm:"column:id;primaryKey" db:"id" json:"id"`
-	Username  string    `gorm:"column:username" db:"username" json:"username"`
-	Email     string    `gorm:"column:email" db:"email" json:"email"`
+	Username  string    `gorm:"column:username;uniqueIndex" db:"username" json:"username"`
+	Email     string    `gorm:"column:email;uniqueIndex" db:"email" json:"email"`
 	Password  string    `gorm:"column:password_hash" db:"password_hash" json:"-"`
-	Role      string    `gorm:"column:role" db:"role" json:"role"`
+	Role      string    `gorm:"column:role;default:user" db:"role" json:"role"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime" db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime" db:"updated_at" json:"updated_at"`
 }
