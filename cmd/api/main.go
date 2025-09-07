@@ -35,6 +35,7 @@ func main() {
 	// Init logging and add request/perf/recovery middlewares
 	logging.Init()
 	r.Use(mw.RequestID())
+	r.Use(mw.PrometheusMetrics()) // Prometheus metrics middleware
 	r.Use(mw.Recovery())
 	r.Use(mw.PerformanceMonitor())
 	r.Use(mw.SecurityHeaders())

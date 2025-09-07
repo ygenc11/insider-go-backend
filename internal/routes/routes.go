@@ -6,9 +6,13 @@ import (
 	"insider-go-backend/internal/processor"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func RegisterRoutes(r *gin.Engine) {
+	// Metrics endpoint for Prometheus
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
 	api := r.Group("/api/v1")
 	{
 		// Auth endpoints (token gerektirmez)
