@@ -37,7 +37,7 @@ func ConnectDB(dsn string) {
 		sqlDB.SetMaxIdleConns(getenvInt("DB_MAX_IDLE", 10))
 		sqlDB.SetConnMaxLifetime(getenvDuration("DB_CONN_MAX_LIFETIME", 30*time.Minute))
 	}
-	fmt.Println("✅ Postgres connected (GORM)")
+	fmt.Println("Postgres connected (GORM)")
 
 	// Varsayılan repository implementasyonlarını başlat
 	InitDefaultRepos(DB)

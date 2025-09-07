@@ -2,7 +2,7 @@
 
 Modern, scalable Go backend API with comprehensive monitoring stack.
 
-## 🚀 Features
+## Features
 
 - RESTful API with JWT authentication
 - PostgreSQL database with migrations
@@ -12,7 +12,7 @@ Modern, scalable Go backend API with comprehensive monitoring stack.
 - Container monitoring with cAdvisor
 - System metrics with Node Exporter
 
-## 📊 Monitoring Stack
+## Monitoring Stack
 
 ### Available Dashboards
 
@@ -34,7 +34,7 @@ Modern, scalable Go backend API with comprehensive monitoring stack.
 - Node Exporter: http://localhost:9100/metrics
 - PostgreSQL Exporter: http://localhost:9187/metrics
 
-## 🛠 Quick Start
+## Quick Start
 
 ```bash
 # Start all services
